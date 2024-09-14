@@ -36,18 +36,54 @@ async function run() {
 
     //blogs related api's
 
+    app.get('/blogs', async (req, res) => {
+      const page = parseInt(req.query.page);
+      const limit = parseInt(req.query.limit);
 
+      let result;
+      if (page && limit) {
+        const skip = (page - 1) * limit
+        result = await blogsCollection.find().skip(skip).limit(limit).toArray()
+      }
+
+      else {
+        result = await blogsCollection.find().toArray()
+      }
+      res.send(result)
+    })
+
+    app.post('/blogs', async (req, res) => {
+      const blogContent = req.body
+      const result = await blogsCollection.insertOne(blogContent)
+      res.send(result)
+    })
+
+    app.patch('/blog/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const options= {upsert: true}
+      const updateDoc = {
+        $set: {}
+      }
+    })
+
+    app.delete('/blog/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await blogsCollection.deleteOne(query)
+      res.send(result)
+    })
 
     //users related api's1
 
-    app.get('/users', async(req, res) => {
+    app.get('/users', async (req, res) => {
       const result = await usersCollection.find().toArray()
       res.send(result)
     })
 
     app.post('/users', async (req, res) => {
       const user = req.body;
-      const query = { email: 'user?email' }
+      const query = { email: 'user?.email' }
       const existingUser = await usersCollection.findOne(query)
       if (existingUser) {
         return res.status(400).send({ message: 'User already exists' });
@@ -56,9 +92,9 @@ async function run() {
       res.send(result)
     })
 
-    app.patch('/user/admin/:email', async(req, res) => {
+    app.patch('/user/admin/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {email: email}
+      const query = { email: email }
       const updateDoc = {
         $set: {
           role: 'admin'
@@ -68,9 +104,9 @@ async function run() {
       res.send(result)
     })
 
-    app.patch('/user/author/:email', async(req, res) => {
+    app.patch('/user/author/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {email: email}
+      const query = { email: email }
       const updateDoc = {
         $set: {
           role: 'author'
@@ -80,9 +116,9 @@ async function run() {
       res.send(result)
     })
 
-    app.delete('/user/:email', async(req, res) => {
+    app.delete('/user/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {email: email}
+      const query = { email: email }
       const result = await usersCollection.deleteOne(query)
       res.send(result)
     })
