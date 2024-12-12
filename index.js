@@ -107,6 +107,14 @@ async function run() {
       res.send(result)
     })
 
+    //get blogs for specific authors by email for dashboard
+    app.get('/blogs/dashboard/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { 'author.email': email }
+      const result = await blogsCollection.find(query).sort({ postAt: -1 }).toArray();
+      res.send(result)
+    })
+
     //get single blogs by id
     app.get('/blog/:id', async (req, res) => {
       const id = req.params.id;
@@ -116,6 +124,15 @@ async function run() {
         return res.status(404).send({ message: 'Blog not found' });
       }
       res.send(result);
+    });
+
+    //get radom blogs 
+    app.get('/random-blogs', async (req, res) => {
+      const randomBlogs = await blogsCollection.aggregate([
+        { $match: { status: "approved" } },
+        { $sample: { size: 5 } }
+      ]).toArray();
+      res.send(randomBlogs);
     });
 
     //post blogs
@@ -173,7 +190,7 @@ async function run() {
 
 
     // update blog 
-    app.patch('/blog/:id', async (req, res) => {
+    app.patch('/updateBlog/:id', async (req, res) => {
       const id = req.params.id;
       const updatedBlogs = req.body;
       const query = { _id: new ObjectId(id) };
@@ -185,7 +202,7 @@ async function run() {
     });
 
     //delete a blog
-    app.delete('/blog/:id', async (req, res) => {
+    app.delete('/blog/delete/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await blogsCollection.deleteOne(query);
@@ -255,6 +272,81 @@ async function run() {
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
+
+    //overall states for admin
+    app.get('/admin-stats', async (req, res) => {
+
+      const [userStats, blogStats] = await Promise.all([
+        usersCollection.aggregate([
+          {
+            $group: {
+              _id: "$role",
+              count: { $sum: 1 }
+            }
+          }
+        ]).toArray(),
+        blogsCollection.aggregate([
+          {
+            $group: {
+              _id: "$status",
+              count: { $sum: 1 }
+            }
+          }
+        ]).toArray()
+      ]);
+
+      const totalAdmin = userStats.find(stat => stat._id === 'admin')?.count || 0;
+      const totalAuthor = userStats.find(stat => stat._id === 'author')?.count || 0;
+      const users = totalAdmin + totalAuthor;
+
+      const totalPendingBlogs = blogStats.find(stat => stat._id === 'pending')?.count || 0;
+      const totalApprovedBlogs = blogStats.find(stat => stat._id === 'approved')?.count || 0;
+      const totalDeniedBlogs = blogStats.find(stat => stat._id === 'denied')?.count || 0;
+      const blogs = totalPendingBlogs + totalApprovedBlogs + totalDeniedBlogs; // Total blogs
+
+      res.status(200).send({
+        users,
+        blogs,
+        totalAdmin,
+        totalAuthor,
+        totalPendingBlogs,
+        totalApprovedBlogs,
+        totalDeniedBlogs
+      });
+    });
+
+    //authors stats
+    app.get('/author-stats/:email', async (req, res) => {
+      const { email } = req.params;
+
+      const blogStats = await blogsCollection.aggregate([
+        {
+          $match: { authorEmail: email }
+        },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 }
+          }
+        }
+      ]).toArray();
+
+      const totalBlogs = blogStats.reduce((sum, stat) => sum + stat.count, 0);
+
+      const totalPendingBlogs = blogStats.find(stat => stat._id === 'pending')?.count || 0;
+      const totalApprovedBlogs = blogStats.find(stat => stat._id === 'approved')?.count || 0;
+      const totalDeniedBlogs = blogStats.find(stat => stat._id === 'denied')?.count || 0;
+
+      res.status(200).send({
+        totalBlogs,
+        totalPendingBlogs,
+        totalApprovedBlogs,
+        totalDeniedBlogs
+      });
+
+    });
+
+
 
     // Reaction APIs can be added similarly if required
 
