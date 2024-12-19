@@ -321,7 +321,7 @@ async function run() {
 
       const blogStats = await blogsCollection.aggregate([
         {
-          $match: { authorEmail: email }
+          $match: { 'author.email': email }
         },
         {
           $group: {
