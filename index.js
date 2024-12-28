@@ -303,11 +303,12 @@ async function run() {
       const totalPendingBlogs = blogStats.find(stat => stat._id === 'pending')?.count || 0;
       const totalApprovedBlogs = blogStats.find(stat => stat._id === 'approved')?.count || 0;
       const totalDeniedBlogs = blogStats.find(stat => stat._id === 'denied')?.count || 0;
-      const blogs = totalPendingBlogs + totalApprovedBlogs + totalDeniedBlogs; // Total blogs
+      const blogs = totalPendingBlogs + totalApprovedBlogs + totalDeniedBlogs; 
 
       res.status(200).send({
         users,
         blogs,
+        normalUser,
         totalAdmin,
         totalAuthor,
         totalPendingBlogs,
