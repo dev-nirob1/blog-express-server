@@ -297,7 +297,8 @@ async function run() {
 
       const totalAdmin = userStats.find(stat => stat._id === 'admin')?.count || 0;
       const totalAuthor = userStats.find(stat => stat._id === 'author')?.count || 0;
-      const users = totalAdmin + totalAuthor;
+      const normalUser = userStats.find(stat => stat._id === 'user')?.count || 0;
+      const users = totalAdmin + totalAuthor + normalUser;
 
       const totalPendingBlogs = blogStats.find(stat => stat._id === 'pending')?.count || 0;
       const totalApprovedBlogs = blogStats.find(stat => stat._id === 'approved')?.count || 0;
